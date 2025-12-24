@@ -5,4 +5,4 @@ beautifulsoup4
 requests
 python-dotenv
 pydantic
-httpx
+httpx[http2]
