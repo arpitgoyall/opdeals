@@ -6,16 +6,26 @@ import re
 logger = logging.getLogger(__name__)
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    # More browser-like header set to reduce bot detection
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "DNT": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
     "Referer": "https://www.amazon.in",
 }
 
 class Scraper:
     async def scrape(self, url: str):
         try:
-            async with httpx.AsyncClient(follow_redirects=True, timeout=10.0) as client:
-                response = await client.get(url, headers=HEADERS)
+            async with httpx.AsyncClient(follow_redirects=True, timeout=12.0, http2=True, headers=HEADERS) as client:
+                response = await client.get(url)
                 response.raise_for_status()
                 
                 final_url = str(response.url)
@@ -144,7 +154,12 @@ class Scraper:
         url_ok = bool(deal["url"])
 
         if not (title_ok and price_ok and mrp_ok and image_ok and url_ok):
-            logger.info("Skipping incomplete deal (title_ok=%s, price_ok=%s, mrp_ok=%s, image_ok=%s, url_ok=%s)", title_ok, price_ok, mrp_ok, image_ok, url_ok)
+            # Log a small snippet of body for diagnostics (avoid huge logs)
+            body_snippet = str(soup)[:500].replace("\n", " ")
+            logger.info(
+                "Skipping incomplete deal (title_ok=%s, price_ok=%s, mrp_ok=%s, image_ok=%s, url_ok=%s). Body snippet: %s",
+                title_ok, price_ok, mrp_ok, image_ok, url_ok, body_snippet
+            )
             return None
 
         return deal

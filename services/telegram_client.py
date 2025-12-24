@@ -2,6 +2,7 @@ from telethon import TelegramClient, events
 import os
 import asyncio
 import logging
+from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,6 +18,11 @@ class TelegramClientManager:
         self.channel_id = int(os.getenv("TELEGRAM_CHANNEL_ID", "-1003651699920"))
 
     async def ensure_connected(self):
+        if not self.api_id or not self.api_hash:
+            # Attempt to load from .env if not already loaded or when running under reload
+            load_dotenv()
+            self.api_id = os.getenv("TELEGRAM_API_ID")
+            self.api_hash = os.getenv("TELEGRAM_API_HASH")
         if not self.api_id or not self.api_hash:
             raise ValueError("API_ID and API_HASH not set in environment")
         
